@@ -96,9 +96,9 @@ message Referee {
         // The blue team may take a direct free kick.
         DIRECT_FREE_BLUE = 9;
         // The yellow team may take an indirect free kick.
-        INDIRECT_FREE_YELLOW = 10 [deprecated = true];
+        INDIRECT_FREE_YELLOW = 10;
         // The blue team may take an indirect free kick.
-        INDIRECT_FREE_BLUE = 11 [deprecated = true];
+        INDIRECT_FREE_BLUE = 11;
         // The yellow team is currently in a timeout.
         TIMEOUT_YELLOW = 12;
         // The blue team is currently in a timeout.
@@ -164,6 +164,8 @@ message Referee {
         optional uint32 bot_substitutions_left = 17;
         // The number of microseconds left for current bot substitution
         optional uint32 bot_substitution_time_left = 18;
+        // The color of the hull of the robots of this team
+        optional HullColor hull_color = 19;
     }
 
     // Information about the two teams.
@@ -235,4 +237,14 @@ enum MatchType {
     ELIMINATION_PHASE = 2;
     // a friendly match, not part of a tournament
     FRIENDLY = 3;
+}
+
+// HullColor is the color of the hull of the robots of a team
+enum HullColor {
+    // not set
+    HULL_COLOR_UNKNOWN = 0;
+    // dark hull color
+    HULL_COLOR_DARK = 1;
+    // light hull color
+    HULL_COLOR_LIGHT = 2;
 }

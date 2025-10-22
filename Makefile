@@ -56,7 +56,7 @@ run: frontend
 	go run ./cmd/$(word 1,$(CMDS))
 
 proto: frontend
-	cd frontend && npm run genProto
+	cd frontend && npm run proto
 
 update-backend:
 	go get -v -u all
