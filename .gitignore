@@ -24,3 +24,5 @@ yarn-error.log*
 
 # Make cache
 /.frontend
+
+bin/*
