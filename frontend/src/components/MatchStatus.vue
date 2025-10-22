@@ -95,7 +95,7 @@ const stage = computed(() => {
 
 const gameState = computed(() => {
   if (isRobotSubstitutionAny.value) {
-    return 'Robot Substitution'
+    return '机器人更换'
   }
   return mapCommandToText(refereeStore.refereeMsg.command)
 })

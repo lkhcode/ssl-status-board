@@ -7,20 +7,20 @@ import {
 } from '@/proto/ssl_gc_game_event_pb'
 
 const stageToText = new Map<Referee_Stage, string>([
-  [Referee_Stage.NORMAL_FIRST_HALF_PRE, 'Match to be started'],
-  [Referee_Stage.NORMAL_FIRST_HALF, '1st Half'],
-  [Referee_Stage.NORMAL_HALF_TIME, 'Half Time'],
-  [Referee_Stage.NORMAL_SECOND_HALF_PRE, '2nd Half'],
-  [Referee_Stage.NORMAL_SECOND_HALF, '2nd Half'],
-  [Referee_Stage.EXTRA_TIME_BREAK, 'Game goes into Overtime'],
-  [Referee_Stage.EXTRA_FIRST_HALF_PRE, '1st Half (Overtime)'],
-  [Referee_Stage.EXTRA_FIRST_HALF, '1st Half (Overtime)'],
-  [Referee_Stage.EXTRA_HALF_TIME, 'Half Time (Overtime)'],
-  [Referee_Stage.EXTRA_SECOND_HALF_PRE, '2nd Half (Overtime)'],
-  [Referee_Stage.EXTRA_SECOND_HALF, '2nd Half (Overtime)'],
-  [Referee_Stage.PENALTY_SHOOTOUT_BREAK, 'Prepare for Penalty Shootout'],
-  [Referee_Stage.PENALTY_SHOOTOUT, 'Penalty Shootout'],
-  [Referee_Stage.POST_GAME, 'Match finished'],
+  [Referee_Stage.NORMAL_FIRST_HALF_PRE, '比赛准备阶段'],
+  [Referee_Stage.NORMAL_FIRST_HALF, '上半场'],
+  [Referee_Stage.NORMAL_HALF_TIME, '中场休息'],
+  [Referee_Stage.NORMAL_SECOND_HALF_PRE, '下半场准备'],
+  [Referee_Stage.NORMAL_SECOND_HALF, '下半场'],
+  [Referee_Stage.EXTRA_TIME_BREAK, '加时赛'],
+  [Referee_Stage.EXTRA_FIRST_HALF_PRE, '上半场（加时赛）准备'],
+  [Referee_Stage.EXTRA_FIRST_HALF, '上半场（加时赛）'],
+  [Referee_Stage.EXTRA_HALF_TIME, '中场休息（加时赛）'],
+  [Referee_Stage.EXTRA_SECOND_HALF_PRE, '下半场（加时赛）准备'],
+  [Referee_Stage.EXTRA_SECOND_HALF, '下半场（加时赛）'],
+  [Referee_Stage.PENALTY_SHOOTOUT_BREAK, '点球大战准备'],
+  [Referee_Stage.PENALTY_SHOOTOUT, '点球大战'],
+  [Referee_Stage.POST_GAME, '比赛结束'],
 ])
 
 export const mapStageToText = (stage: Referee_Stage): string => {
@@ -28,22 +28,22 @@ export const mapStageToText = (stage: Referee_Stage): string => {
   if (text !== undefined) {
     return text
   }
-  return `unknown stage: ${stage}`
+  return `未知的比赛阶段: ${stage}`
 }
 
 const commandToText = new Map<Referee_Command, string>([
-  [Referee_Command.HALT, 'Game is Halted'],
-  [Referee_Command.STOP, 'Game is Stopped'],
-  [Referee_Command.NORMAL_START, 'Game is Running'],
-  [Referee_Command.FORCE_START, 'Game is Running'],
+  [Referee_Command.HALT, 'Game Halt'],
+  [Referee_Command.STOP, 'Stop Game'],
+  [Referee_Command.NORMAL_START, 'Normal Start'],
+  [Referee_Command.FORCE_START, 'Force Start'],
   [Referee_Command.PREPARE_KICKOFF_YELLOW, 'Kickoff'],
   [Referee_Command.PREPARE_KICKOFF_BLUE, 'Kickoff'],
   [Referee_Command.PREPARE_PENALTY_YELLOW, 'Penalty Kick'],
   [Referee_Command.PREPARE_PENALTY_BLUE, 'Penalty Kick'],
-  [Referee_Command.DIRECT_FREE_YELLOW, 'Game is Running'],
-  [Referee_Command.DIRECT_FREE_BLUE, 'Game is Running'],
-  [Referee_Command.INDIRECT_FREE_YELLOW, 'Game is Running'],
-  [Referee_Command.INDIRECT_FREE_BLUE, 'Game is Running'],
+  [Referee_Command.DIRECT_FREE_YELLOW, 'Direct Kick'],
+  [Referee_Command.DIRECT_FREE_BLUE, 'Direct Kick'],
+  [Referee_Command.INDIRECT_FREE_YELLOW, 'Indirect Kick'],
+  [Referee_Command.INDIRECT_FREE_BLUE, 'Indirect Kick'],
   [Referee_Command.TIMEOUT_YELLOW, 'Timeout'],
   [Referee_Command.TIMEOUT_BLUE, 'Timeout'],
   [Referee_Command.GOAL_YELLOW, 'Goal'],
@@ -57,7 +57,7 @@ export const mapCommandToText = (command: Referee_Command): string => {
   if (text !== undefined) {
     return text
   }
-  return `unknown command: ${command}`
+  return `未知命令: ${command}`
 }
 
 const oppositeTeam = (team: Team): Team => {
@@ -125,83 +125,83 @@ function appendCrashDetails(
 
 export const mapGameEventToText = (gameEvent: GameEvent): string => {
   if (!gameEvent.event) {
-    return 'unknown game event'
+    return '无法识别的比赛事件'
   }
 
   switch (gameEvent.event.case) {
     case 'noProgressInGame':
-      return `No progress for ${seconds(gameEvent.event.value.time)}`
+      return `${seconds(gameEvent.event.value.time)}内无进展`
     case 'placementFailed': {
       const event = gameEvent.event.value
       if (event.nearestOwnBotDistance != null) {
         return (
-          `${teamAndBot(event)} failed placing ball ` +
-          ` (${distance(event.remainingDistance)} remaining, ` +
-          `nearest own bot at ${distance(event.nearestOwnBotDistance)})`
+          `${teamAndBot(event)} 放球失败 ` +
+          ` (剩余${distance(event.remainingDistance)}，` +
+          `最近己方机器人距离${distance(event.nearestOwnBotDistance)})`
         )
       }
       return (
-        `${teamAndBot(event)} failed placing ball ` +
-        ` (${distance(event.remainingDistance)} remaining)`
+        `${teamAndBot(event)} 放球失败 ` +
+        ` (剩余${distance(event.remainingDistance)})`
       )
     }
     case 'placementSucceeded': {
       const event = gameEvent.event.value
       return (
-        `${teamAndBot(event)} placed ball successfully ` +
-        `over ${distance(event.distance)} ` +
-        `within ${seconds(event.timeTaken)} ` +
-        `and ${distance(event.precision)}`
+        `${teamAndBot(event)} 成功放球 ` +
+        `距离${distance(event.distance)} ` +
+        `耗时${seconds(event.timeTaken)} ` +
+        `精度${distance(event.precision)}`
       )
     }
     case 'botSubstitution':
-      return `Team ${teamAndBot(gameEvent.event.value)} substitutes robots`
+      return `${teamAndBot(gameEvent.event.value)} 进行机器人更换`
     case 'excessiveBotSubstitution':
-      return `Team ${teamAndBot(gameEvent.event.value)} excessively substituted robots`
+      return `${teamAndBot(gameEvent.event.value)} 更换机器人次数过多`
     case 'tooManyRobots': {
       const event = gameEvent.event.value
       return (
-        `${teamAndBot(event)} has ${event.numRobotsOnField} robots on the field, ` +
-        `but only ${event.numRobotsAllowed} are allowed`
+        `${teamAndBot(event)} 场上有${event.numRobotsOnField}个机器人，` +
+        `但只允许存在${event.numRobotsAllowed}个`
       )
     }
     case 'ballLeftFieldTouchLine':
-      return `${teamAndBot(gameEvent.event.value)} kicked ball out via touch line`
+      return `${teamAndBot(gameEvent.event.value)} 将球踢出边线`
     case 'ballLeftFieldGoalLine':
-      return `${teamAndBot(gameEvent.event.value)} kicked ball out via goal line`
+      return `${teamAndBot(gameEvent.event.value)} 将球踢出底线`
     case 'possibleGoal':
-      return `${teamAndBot(gameEvent.event.value)} might have scored a goal`
+      return `${teamAndBot(gameEvent.event.value)} 存在待确认的进球`
     case 'goal':
-      return `${teamAndBot(gameEvent.event.value)} has scored a goal`
+      return `${teamAndBot(gameEvent.event.value)} 进球有效`
     case 'invalidGoal': {
       const event = gameEvent.event.value
-      return `Scored goal by ${teamAndBot(event)} is invalid: ${event.message}`
+      return `${teamAndBot(event)} 进球无效：${event.message}`
     }
     case 'aimlessKick':
-      return `${teamAndBot(gameEvent.event.value)} kicked aimlessly`
+      return `${teamAndBot(gameEvent.event.value)} 无意义射门`
     case 'keeperHeldBall': {
       const event = gameEvent.event.value
-      return `${teamAndBot(event)}'s keeper held the ball for ${seconds(event.duration)}`
+      return `${teamAndBot(event)} 守门员清球超时${seconds(event.duration)}`
     }
     case 'attackerDoubleTouchedBall':
-      return `${teamAndBot(gameEvent.event.value)} touched ball twice`
+      return `${teamAndBot(gameEvent.event.value)} 二次触球`
     case 'attackerTouchedBallInDefenseArea':
-      return `${teamAndBot(gameEvent.event.value)} touched ball in opponent defense area`
+      return `${teamAndBot(gameEvent.event.value)} 在对方禁区触球`
     case 'botDribbledBallTooFar':
-      return `${teamAndBot(gameEvent.event.value)} dribbled ball too far`
+      return `${teamAndBot(gameEvent.event.value)} 带球过度`
     case 'botKickedBallTooFast': {
       const event = gameEvent.event.value
-      return `${teamAndBot(event)} kicked ball too fast(${velocity(event.initialBallSpeed)})`
+      return `${teamAndBot(event)} 踢球速度过快(${velocity(event.initialBallSpeed)})`
     }
     case 'attackerTooCloseToDefenseArea': {
       const event = gameEvent.event.value
-      return `${teamAndBot(event)} too close to opponent defense area (${distance(event.distance)})`
+      return `${teamAndBot(event)} 距离对方禁区过近(${distance(event.distance)})`
     }
     case 'botInterferedPlacement':
-      return `${teamAndBot(gameEvent.event.value)} interfered placement`
+      return `${teamAndBot(gameEvent.event.value)} 干扰放球`
     case 'botCrashDrawn': {
       const event = gameEvent.event.value
-      const text = `Bot Blue ${event.botBlue} and Yellow ${event.botYellow} crashed`
+      const text = `蓝队机器人${event.botBlue}和黄队机器人${event.botYellow}碰撞`
       return appendCrashDetails(event, text)
     }
     case 'botCrashUnique': {
@@ -210,7 +210,7 @@ export const mapGameEventToText = (gameEvent: GameEvent): string => {
       const otherTeam = oppositeTeam(byTeam)
       const violator = event.violator
       const victim = event.victim
-      const text = `${formatTeam(byTeam)} ${violator} crashed into ${formatTeam(otherTeam)} ${victim}`
+      const text = `${formatTeam(byTeam)} ${violator} 撞向 ${formatTeam(otherTeam)} ${victim}`
       return appendCrashDetails(event, text)
     }
     case 'botPushedBot': {
@@ -220,68 +220,72 @@ export const mapGameEventToText = (gameEvent: GameEvent): string => {
       const violator = event.violator
       const victim = event.victim
       const dist = event.pushedDistance
-      let text = `${formatTeam(byTeam)} ${violator} pushed ${formatTeam(otherTeam)} ${victim}`
+      let text = `${formatTeam(byTeam)} ${violator} 推挤 ${formatTeam(otherTeam)} ${victim}`
       if (dist > 0) {
-        text += ` over ${distance(dist)}`
+        text += ` 距离${distance(dist)}`
       }
       return text
     }
     case 'botHeldBallDeliberately': {
       const event = gameEvent.event.value
-      return `${teamAndBot(event)} held ball deliberately for ${event.duration}`
+      return `${teamAndBot(event)} 护球 ${event.duration} s`
     }
     case 'botTippedOver':
-      return `${teamAndBot(gameEvent.event.value)} tipped over`
+      return `${teamAndBot(gameEvent.event.value)} 翻倒`
     case 'botDroppedParts':
-      return `${teamAndBot(gameEvent.event.value)} dropped parts`
+      return `${teamAndBot(gameEvent.event.value)} 掉落部件`
     case 'botTooFastInStop': {
       const event = gameEvent.event.value
-      return `${teamAndBot(event)} too fast during stop (${velocity(event.speed)})`
+      return `${teamAndBot(event)} 在停止阶段超速(${velocity(event.speed)})`
     }
     case 'defenderTooCloseToKickPoint': {
       const event = gameEvent.event.value
-      return `${teamAndBot(event)} too close to kick point (${distance(event.distance)})`
+      return `${teamAndBot(event)} 距离开球点过近(${distance(event.distance)})`
     }
     case 'defenderInDefenseArea': {
       const event = gameEvent.event.value
-      return `${teamAndBot(event)} touched ball while fully inside own defense area (${distance(event.distance)})`
+      return `${teamAndBot(event)} 完全进入己方禁区触球(${distance(event.distance)})`
     }
     case 'multipleCards':
-      return `${teamAndBot(gameEvent.event.value)} collected multiple cards`
+      return `${teamAndBot(gameEvent.event.value)} 累计受牌`
     case 'multipleFouls': {
       const event = gameEvent.event.value
       return (
-        `${teamAndBot(event)} collected multiple fouls: ` +
-        event.causedGameEvents.map((cause: GameEvent) => mapGameEventToText(cause)).join(', ')
+        `${teamAndBot(event)} 累计多次犯规：` +
+        event.causedGameEvents.map((cause: GameEvent) => mapGameEventToText(cause)).join('，')
       )
     }
     case 'unsportingBehaviorMinor': {
       const event = gameEvent.event.value
-      return `Unsporting behavior by ${teamAndBot(event)}: ${event.reason}`
+      return `${teamAndBot(event)} 轻微的违反体育精神的行为：${event.reason}`
     }
     case 'unsportingBehaviorMajor': {
       const event = gameEvent.event.value
-      return `Major unsporting behavior by ${teamAndBot(event)}: ${event.reason}`
+      return `${teamAndBot(event)} 严重的违反体育精神的行为：${event.reason}`
     }
     case 'boundaryCrossing':
-      return `${teamAndBot(gameEvent.event.value)} kicked the ball over the field boundary`
+      return `${teamAndBot(gameEvent.event.value)} 将球踢出场地边界`
     case 'penaltyKickFailed': {
       const event = gameEvent.event.value
-      const reason = event.reason != null ? ': ' + event.reason : ''
-      return `Penalty kick failed by ${teamAndBot(event)}${reason}`
+      const reason = event.reason != null ? '：' + event.reason : ''
+      return `${teamAndBot(event)} 点球失败${reason}`
     }
     case 'challengeFlag':
-      return `${teamAndBot(gameEvent.event.value)} raised a challenge flag`
+      return `${teamAndBot(gameEvent.event.value)} 提出质疑`
     case 'challengeFlagHandled': {
       const event = gameEvent.event.value
       if (event.accepted) {
-        return `Challenge from ${teamAndBot(event)} accepted`
+        return `${teamAndBot(event)} 的质疑被接受`
       }
-      return `Challenge from ${teamAndBot(event)} rejected`
+      return `${teamAndBot(event)} 的质疑被驳回`
     }
     case 'emergencyStop':
-      return `Emergency stop for ${teamAndBot(gameEvent.event.value)} executed`
+      return `${teamAndBot(gameEvent.event.value)} 发出紧急停止信号`
+    case 'attackerTouchedOpponentInDefenseArea' :
+      return `${teamAndBot(gameEvent.event.value)} 在对方禁区触碰对方机器人`
+    case 'defenderInDefenseAreaPartially' :
+      return `${teamAndBot(gameEvent.event.value)} 部分进入己方禁区触球`
     default:
-      return 'unknown game event'
+      return '未知比赛事件'
   }
 }
