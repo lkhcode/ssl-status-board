@@ -12,7 +12,7 @@ const stageToText = new Map<Referee_Stage, string>([
   [Referee_Stage.NORMAL_HALF_TIME, '中场休息'],
   [Referee_Stage.NORMAL_SECOND_HALF_PRE, '下半场准备'],
   [Referee_Stage.NORMAL_SECOND_HALF, '下半场'],
-  [Referee_Stage.EXTRA_TIME_BREAK, '加时赛'],
+  [Referee_Stage.EXTRA_TIME_BREAK, '加时赛休息'],
   [Referee_Stage.EXTRA_FIRST_HALF_PRE, '上半场（加时赛）准备'],
   [Referee_Stage.EXTRA_FIRST_HALF, '上半场（加时赛）'],
   [Referee_Stage.EXTRA_HALF_TIME, '中场休息（加时赛）'],
