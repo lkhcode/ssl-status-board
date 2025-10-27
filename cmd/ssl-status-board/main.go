@@ -2,11 +2,12 @@ package main
 
 import (
 	"flag"
-	"github.com/RoboCup-SSL/ssl-status-board/frontend"
-	"github.com/RoboCup-SSL/ssl-status-board/pkg/board"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/RoboCup-SSL/ssl-status-board/frontend"
+	"github.com/RoboCup-SSL/ssl-status-board/pkg/board"
 )
 
 func main() {
@@ -23,7 +24,6 @@ func main() {
 	}
 
 	refereeBoard := board.NewBoard(config.RefereeConnection)
-	refereeBoard.MulticastServer.SkipInterfaces = config.RefereeConnection.SkipInterfaces
 	refereeBoard.Start()
 	http.HandleFunc(config.RefereeConnection.SubscribePath, refereeBoard.WsHandler)
 	http.HandleFunc("/api/clients", refereeBoard.ClientsHandler)
