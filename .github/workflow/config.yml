@@ -101,8 +101,13 @@ jobs:
           done
       - name: Package bootstrap tar.gz
         run: |
-          cp -a rpi ssl-status-board
-          tar czf release/bootstrap.tar.gz ssl-status-board
+          set -u
+          if [ -d "rpi" ]; then
+            cp -a rpi ssl-status-board
+            tar czf release/bootstrap.tar.gz ssl-status-board
+          else
+            echo "rpi directory not found, skipping bootstrap.tar.gz packaging"
+          fi
       - name: Save release artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -138,6 +143,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Build multi-arch Docker images
@@ -154,6 +166,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Login to Docker Hub
