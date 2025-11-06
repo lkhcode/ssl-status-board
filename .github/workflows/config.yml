@@ -1,0 +1,199 @@
+name: Build, Test & Release
+
+on:
+  push:
+    branches: [ '*' ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ '*' ]
+  workflow_dispatch:
+    inputs:
+      cmds:
+        type: string
+        description: 'Commands to build (space-separated)'
+        default: 'ssl-status-board'
+
+env:
+  CMDS: ${{ github.event.inputs.cmds || 'ssl-status-board' }}
+  DOCKER_REPO: herryli124
+
+jobs:
+  build_node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm install
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+      - name: Save workspace
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
+  test_go:
+    needs: build_node
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.25.1
+          cache: true
+      - name: Restore frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+      - name: Install dependencies
+        run: go get -v -t -d ./...
+      - name: Run tests with coverage
+        run: go test -v -covermode=count -coverprofile=count.out ./...
+      - name: Generate coverage report
+        run: go tool cover -html=count.out -o coverage.html
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.html
+
+  build_go:
+    needs: build_node
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.25.1
+          cache: true
+      - name: Restore frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+      - name: Install dependencies
+        run: go get -v -t -d ./...
+      - name: Build binaries for multiple platforms
+        run: |
+          set -u
+          version=${{ github.ref_name }}
+          mkdir -p release
+          for cmd in $CMDS; do
+            GOOS=linux GOARCH=amd64 go build -o ./release/${cmd}_${version}_linux_amd64 ./cmd/${cmd}
+            GOOS=linux GOARCH=arm64 go build -o ./release/${cmd}_${version}_linux_arm64 ./cmd/${cmd}
+            GOOS=linux GOARCH=arm go build -o ./release/${cmd}_${version}_linux_arm ./cmd/${cmd}
+            GOOS=darwin GOARCH=amd64 go build -o ./release/${cmd}_${version}_darwin_amd64 ./cmd/${cmd}
+            GOOS=darwin GOARCH=arm64 go build -o ./release/${cmd}_${version}_darwin_arm64 ./cmd/${cmd}
+            GOOS=windows GOARCH=amd64 go build -o ./release/${cmd}_${version}_windows_amd64.exe ./cmd/${cmd}
+            GOOS=windows GOARCH=arm64 go build -o ./release/${cmd}_${version}_windows_arm64.exe ./cmd/${cmd}
+          done
+      - name: Package bootstrap tar.gz
+        run: |
+          set -u
+          if [ -d "rpi" ]; then
+            cp -a rpi ssl-status-board
+            tar czf release/bootstrap.tar.gz ssl-status-board
+          else
+            echo "rpi directory not found, skipping bootstrap.tar.gz packaging"
+          fi
+      - name: Save release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-binaries
+          path: release/
+
+  publish_gh:
+    needs: build_go
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: release-binaries
+          path: release/
+      - name: Install ghr
+        run: go install github.com/tcnksm/ghr@v0.16.0
+      - name: Publish to GitHub Releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -u
+          ghr -t $GITHUB_TOKEN \
+              -u ${{ github.repository_owner }} \
+              -r ${{ github.event.repository.name }} \
+              -c ${{ github.sha }} \
+              -delete -generatenotes \
+              ${{ github.ref_name }} ./release
+
+  build_docker:
+    if: github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build multi-arch Docker images
+        run: |
+          for cmd in $CMDS; do
+            docker buildx build --platform linux/amd64,linux/arm64 \
+              --build-arg cmd=${cmd} \
+              -f ./cmd/${cmd}/Dockerfile \
+              -t ${DOCKER_REPO}/${cmd}:latest .
+          done
+
+  publish_docker:
+    if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      - name: Determine Docker tag
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TAG=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+          else
+            TAG=latest
+          fi
+          echo "TAG=$TAG" >> $GITHUB_ENV
+      - name: Push multi-arch Docker images
+        run: |
+          for cmd in $CMDS; do
+            docker buildx build --platform linux/amd64,linux/arm64 \
+              --build-arg cmd=${cmd} \
+              -f ./cmd/${cmd}/Dockerfile \
+              -t ${DOCKER_REPO}/${cmd}:${{ env.TAG }} \
+              --push .
+          done
