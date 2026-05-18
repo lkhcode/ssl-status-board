@@ -14,11 +14,20 @@ const knownLogos = new Set([
   'zjunlict',
 ])
 
+export const normalizeTeamName = (value: string): string =>
+  value
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e]/g, '')
+    .replace(/\s+/g, '')
+    .trim()
+
 export const getTeamLogoUrl = (teamName: string): string => {
-  const normalizedTeamName = teamName.trim().toLowerCase()
+  const normalizedTeamName = normalizeTeamName(teamName)
 
   for (const logoName of knownLogos) {
-    if (normalizedTeamName.includes(logoName.toLowerCase())) {
+    const normalizedLogoName = normalizeTeamName(logoName)
+    if (normalizedTeamName.includes(normalizedLogoName)) {
       // Use URL import for dynamic loading that works with Vite
       return new URL(`../assets/logos/${logoName}.png`, import.meta.url).href
     }
