@@ -1,12 +1,14 @@
 package board
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"runtime"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -35,8 +37,8 @@ func (m *MulticastServer) Start() {
 
 	var conn *net.UDPConn
 	if runtime.GOOS == "windows" {
-		// Windows: bind to 0.0.0.0 and join multicast group
-		conn, err = net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4zero, Port: udpAddr.Port})
+		// Windows: bind to 0.0.0.0 with SO_REUSEADDR and join multicast group
+		conn, err = listenUDPReuseAddr("udp4", &net.UDPAddr{IP: net.IPv4zero, Port: udpAddr.Port})
 		if err != nil {
 			log.Println("ListenUDP error:", err)
 			return
@@ -74,6 +76,26 @@ func (m *MulticastServer) Start() {
 			}
 		}
 	}()
+}
+
+func listenUDPReuseAddr(network string, laddr *net.UDPAddr) (*net.UDPConn, error) {
+	lc := net.ListenConfig{
+		Control: func(network, address string, c syscall.RawConn) error {
+			var controlErr error
+			if err := c.Control(func(fd uintptr) {
+				controlErr = setReuseAddr(fd)
+			}); err != nil {
+				return err
+			}
+			return controlErr
+		},
+	}
+
+	pc, err := lc.ListenPacket(context.Background(), network, laddr.String())
+	if err != nil {
+		return nil, err
+	}
+	return pc.(*net.UDPConn), nil
 }
 
 // Stop stops the multicast server
