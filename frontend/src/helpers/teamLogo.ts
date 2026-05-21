@@ -12,6 +12,7 @@ const knownLogos = new Set([
   '湖州师范大学',
   '浙江纺织服装职业技术学院',
   'zjunlict',
+  'spbunited'
 ])
 
 export const normalizeTeamName = (value: string): string =>
