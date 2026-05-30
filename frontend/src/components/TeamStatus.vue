@@ -68,6 +68,7 @@ const logoUrl = computed(() => {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+  min-height: 2.5em;
 }
 
 .team-logo {
