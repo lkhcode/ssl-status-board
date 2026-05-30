@@ -2,6 +2,7 @@ package board
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -166,7 +167,9 @@ func (b *Board) SendRefereeData(conn *websocket.Conn) bool {
 		return false
 	}
 	if err := conn.WriteMessage(websocket.BinaryMessage, data); err != nil {
-		log.Println("Could not write to referee websocket: ", err)
+		if !errors.Is(err, syscall.EPIPE) && !errors.Is(err, syscall.ECONNRESET) {
+			log.Println("Could not write to referee websocket: ", err)
+		}
 		return false
 	}
 	return true
